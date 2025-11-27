@@ -1,0 +1,13 @@
+elk-fastapi-logging-demo/
+├── README.md                  مستندات کامل فارسی + انگلیسی
+├── .gitignore
+├── docker-compose.yml         نسخه نهایی و تمیز شده
+├── fastapi-app/
+│   ├── Dockerfile
+│   ├── main.py                نسخه نهایی و ۱۰۰٪ کارکردی (بدون پکیج اضافی)
+│   └── requirements.txt
+├── logstash/
+│   ├── Dockerfile
+│   └── logstash.conf          فقط tcp + json_lines + خروجی به ES
+└── kibana/
+    └── (اختیاری) داشبوردهای آماده export شده (بعداً اضافه می‌کنیم)

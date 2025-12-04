@@ -8,8 +8,13 @@
 - Elasticsearch 9.2.1 با امنیت فعال
 - Kibana 9.2.1 با ترفند service token برای محیط توسعه
 - Logstash با ورودی TCP + `json_lines`
-- FastAPI با لاگر دستی (بدون وابستگی اضافی)
+- heartbeat    بررسی سلامت سرویس ها
+- service-loanResource    سرویس app 
+- service-payment   سرویس app
+- service-reservation   سرویس app
+- common   لاگر مشترک برای سرویس ها
 - لاگ‌های استاندارد JSON با `@timestamp` درست
+- 
 - کاملاً با Docker Compose
 
 ## شروع سریع

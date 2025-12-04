@@ -1,0 +1,27 @@
+heartbeat.monitors:
+- type: http
+  id: loan-resource
+  name: Loan Resource Service
+  hosts: ["http://loan-resource:8000"]
+  check.response.status: 200
+  schedule: '@every 10s'
+
+- type: http
+  id: payment-service
+  name: Payment Service
+  hosts: ["http://payment-service:8000"]
+  check.response.status: 200
+  schedule: '@every 10s'
+
+- type: http
+  id: reservation-service
+  name: Reservation Service
+  hosts: ["http://reservation-service:8000"]
+  check.response.status: 200
+  schedule: '@every 10s'
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+
+setup.kibana:
+  host: "http://kibana:5601"

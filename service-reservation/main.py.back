@@ -1,0 +1,43 @@
+from fastapi import FastAPI
+import logging
+import socket
+import json
+from datetime import datetime
+
+app = FastAPI()
+
+LOGSTASH_HOST = "logstash"
+LOGSTASH_PORT = 5044
+
+class LogstashHandler(logging.Handler):
+    def emit(self, record):
+        try:
+            log_entry = {
+                "@timestamp": datetime.utcnow().isoformat(timespec='milliseconds') + "Z",
+                "level": record.levelname,
+                "message": record.getMessage(),
+                "logger": record.name,
+                "app": "fastapi-demo"
+            }
+            msg = json.dumps(log_entry) + "\n"
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect((LOGSTASH_HOST, LOGSTASH_PORT))
+            sock.sendall(msg.encode("utf-8"))
+            sock.close()
+        except Exception:
+            pass
+
+logger = logging.getLogger("fastapi")
+logger.setLevel(logging.INFO)
+logger.addHandler(LogstashHandler())
+logger.addHandler(logging.StreamHandler())
+
+@app.get("/")
+async def home():
+    logger.info("Someone visited the home page!")
+    return {"message": "سلام! حالا واقعاً کار کرد"}
+
+@app.get("/error")
+async def error():
+    logger.error("این ارور تستیه!")
+    return {"status": "error"}

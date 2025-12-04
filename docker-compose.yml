@@ -1,0 +1,125 @@
+version: '3.8'
+services:
+  elasticsearch:
+    image: elasticsearch:9.2.1
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - 9200:9200
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    healthcheck:                     # این بخش حیاتی!
+      test: ["CMD-SHELL", "curl -f http://localhost:9200 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    networks:                     # ﺎﯿﻧ ﺩﻭ ﺦﻃ ﺢﯾﺎﺘﯾ ﻪﺴﺘﻧ!
+      - elknet
+
+  kibana:
+    image: kibana:9.2.1
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - 5601:5601
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+    networks:                     # ﺎﯿﻧ ﺩﻭ ﺦﻃ ﺢﯾﺎﺘﯾ ﻪﺴﺘﻧ!
+      - elknet
+
+  logstash:
+    image: logstash:9.2.1
+    ports:
+      - 5044:5044
+      - 9600:9600
+    environment:
+      - LS_JAVA_OPTS=-Xmx1g -Xms1g
+    volumes:
+      - ./logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - ./logstash/logs:/usr/share/logstash/logs
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+    networks:                     # ﺎﯿﻧ ﺩﻭ ﺦﻃ ﺢﯾﺎﺘﯾ ﻪﺴﺘﻧ!
+      - elknet
+
+  heartbeat:
+    image: docker.elastic.co/beats/heartbeat:9.2.1
+    container_name: heartbeat
+    user: root
+    volumes:
+      - ./heartbeat/heartbeat.yml:/usr/share/heartbeat/heartbeat.yml:ro
+    depends_on:
+      elasticsearch:
+        condition: service_healthy        # این خط مهمه! صبر می‌کنه تا ES کامل بالا بیاد
+      kibana:
+        condition: service_started
+    restart: unless-stopped
+    networks:                     # این دو خط حیاتی هستن!
+      - elknet
+
+      # سرویس اول
+  loan-resource:
+    build:
+      context: .                     # کل پروژه رو می‌بینه
+      dockerfile: service-loanResource/Dockerfile
+    ports:
+      - 8000:8000
+    environment:
+      - APP_NAME=loanResource
+      - ENV=prod
+    depends_on:
+      - logstash
+    networks:                     # ﺎﯿﻧ ﺩﻭ ﺦﻃ ﺢﯾﺎﺘﯾ ﻪﺴﺘﻧ!
+      - elknet
+    restart: unless-stopped
+
+  # سرویس دوم
+  reservation-service:
+    build:
+      context: .                     # ﮏﻟ ﭖﺭﻭﮋﻫ ﺭﻭ ﻢﯾ<200c>ﺒﯿﻨﻫ
+      dockerfile: service-reservation/Dockerfile
+    ports:
+      - 8001:8000 
+    environment:
+      - APP_NAME=reservationService
+      - ENV=prod
+    depends_on:
+      - logstash
+    networks:                     # ﺎﯿﻧ ﺩﻭ ﺦﻃ ﺢﯾﺎﺘﯾ ﻪﺴﺘﻧ!
+      - elknet
+    restart: unless-stopped
+
+  # سرویس سوم (اختیاری)
+  payment-service:
+    build:
+      context: .
+      dockerfile: service-payment/Dockerfile
+    ports:
+      - 8002:8000
+    environment:
+      - APP_NAME=paymentService
+      - ENV=prod
+    depends_on:
+      - logstash
+    networks:                     # ﺎﯿﻧ ﺩﻭ ﺦﻃ ﺢﯾﺎﺘﯾ ﻪﺴﺘﻧ!
+      - elknet
+    restart: unless-stopped
+
+volumes:
+  esdata:
+networks:
+  elknet:
+    driver: bridge
